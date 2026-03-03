@@ -1,120 +1,275 @@
-// simulador de prestamos
-// idea basada en lo visto en clase
-
-const datos = {
-    usuario: "fran",
-    contrasenia: "1234",
-    ingreso: false,
-    prestamos: []
+// =============================
+// CLASE ARTICULO
+// =============================
+class Articulo {
+    constructor(nombre, codigo, categoria, precio, stock, detalle) {
+        this.nombre = nombre
+        this.codigo = codigo
+        this.categoria = categoria
+        this.precio = Number(precio)
+        this.stock = stock
+        this.detalle = detalle
+    }
 }
 
-function login(intentos, maxIntentos){
-    alert("Intento " + (intentos + 1) + " de " + maxIntentos)
-    let usuarioIngresado = prompt("Ingrese usuario").toLowerCase()
-    let contraseniaIngresada = prompt("Ingrese contraseña")
+// =============================
+// PRODUCTOS BASE
+// =============================
+const catalogoInicial = [
+    { nombre:"PlayStation 5", codigo:"G01", categoria:"Consolas", precio:850000, stock:5, detalle:"Consola Sony de última generación 4K" },
+    { nombre:"Xbox Series X", codigo:"G02", categoria:"Consolas", precio:820000, stock:4, detalle:"Potencia y rendimiento next-gen" },
+    { nombre:"Joystick PS5", codigo:"G03", categoria:"Accesorios", precio:95000, stock:12, detalle:"Control inalámbrico DualSense" },
+    { nombre:"Teclado Mecánico RGB", codigo:"G04", categoria:"Accesorios", precio:60000, stock:8, detalle:"Teclado gamer retroiluminado" },
+    { nombre:"FIFA 24", codigo:"G05", categoria:"Juegos", precio:70000, stock:15, detalle:"Simulador de fútbol EA Sports" },
+    { nombre:"Call of Duty MW3", codigo:"G06", categoria:"Juegos", precio:75000, stock:10, detalle:"Shooter de última generación" }
+]
 
-    if(usuarioIngresado === datos.usuario && contraseniaIngresada === datos.contrasenia){
-        alert("Bienvenido al sistema")
-        datos.ingreso = true
-        return true
+// =============================
+// ESTADO GLOBAL
+// =============================
+let inventario = JSON.parse(localStorage.getItem("inventario")) || []
+let carrito = JSON.parse(localStorage.getItem("carrito")) || []
+let ventas = JSON.parse(localStorage.getItem("ventas")) || []
+
+// =============================
+// INICIALIZAR INVENTARIO
+// =============================
+const inicializarInventario = () => {
+    if (inventario.length === 0) {
+        catalogoInicial.forEach(item => {
+            inventario.push(new Articulo(
+                item.nombre,
+                item.codigo,
+                item.categoria,
+                item.precio,
+                item.stock,
+                item.detalle
+            ))
+        })
+        localStorage.setItem("inventario", JSON.stringify(inventario))
+    }
+}
+
+// =============================
+// RENDER PRODUCTOS
+// =============================
+const mostrarProductos = (lista) => {
+
+    const contenedor = document.getElementById("contenedorProductos")
+    contenedor.innerHTML = ""
+
+    lista.forEach(producto => {
+
+        const card = document.createElement("div")
+        card.className = "card m-2 p-2"
+        card.style.width = "260px"
+
+        card.innerHTML = `
+            <h5>${producto.nombre}</h5>
+            <h6>${producto.categoria}</h6>
+            <p>${producto.detalle}</p>
+            <p><strong>$${producto.precio}</strong></p>
+            <p>Stock: ${producto.stock}</p>
+            <input type="number" min="1" max="${producto.stock}" placeholder="Cantidad" id="cant-${producto.codigo}">
+            <button class="btn btn-primary mt-2" id="btn-${producto.codigo}">Agregar</button>
+        `
+
+        contenedor.appendChild(card)
+
+        document.getElementById(`btn-${producto.codigo}`)
+            .addEventListener("click", () => {
+
+                const cantidad = Number(document.getElementById(`cant-${producto.codigo}`).value)
+
+                if (cantidad > 0 && cantidad <= producto.stock) {
+                    agregarAlCarrito(producto, cantidad)
+                } else {
+                    Swal.fire("Error", "Cantidad inválida", "error")
+                }
+            })
+    })
+}
+
+// =============================
+// AGREGAR AL CARRITO
+// =============================
+const agregarAlCarrito = (producto, cantidad) => {
+
+    const existente = carrito.find(p => p.codigo === producto.codigo)
+
+    if (existente) {
+        existente.cantidad += cantidad
     } else {
-        alert("Datos incorrectos")
+        carrito.push({ ...producto, cantidad })
     }
+
+    localStorage.setItem("carrito", JSON.stringify(carrito))
+    renderCarrito()
+
+    Swal.fire("Agregado", "Producto agregado al carrito", "success")
 }
 
-function simularPrestamo(){
-    let monto = Number(prompt("Ingrese el monto del prestamo"))
-    while(isNaN(monto) || monto <= 0){
-        monto = Number(prompt("Monto invalido, ingrese nuevamente"))
-    }
+// =============================
+// RENDER CARRITO
+// =============================
+const renderCarrito = () => {
 
-    let cuotas = Number(prompt("Ingrese la cantidad de cuotas (6, 12 o 24)"))
-    while(cuotas !== 6 && cuotas !== 12 && cuotas !== 24){
-        cuotas = Number(prompt("Cuotas invalidas, ingrese 6, 12 o 24"))
-    }
+    const lista = document.getElementById("listaCarrito")
+    lista.innerHTML = ""
 
-    let interes
-    if(cuotas === 6){
-        interes = 1.2
-    } else if(cuotas === 12){
-        interes = 1.4
-    } else {
-        interes = 1.6
-    }
+    carrito.forEach(item => {
 
-    let total = monto * interes
+        const li = document.createElement("li")
+        li.className = "list-group-item"
 
-    const prestamo = {
-        monto: monto,
-        cuotas: cuotas,
-        total: total
-    }
+        li.innerHTML = `
+            ${item.nombre} - ${item.cantidad} x $${item.precio}
+            <button class="btn btn-danger btn-sm float-end" id="del-${item.codigo}">X</button>
+        `
 
-    datos.prestamos.push(prestamo)
+        lista.appendChild(li)
 
-    alert(
-        "Prestamo creado\n" +
-        "Monto: $" + monto + "\n" +
-        "Cuotas: " + cuotas + "\n" +
-        "Total: $" + total.toFixed(2)
-    )
+        document.getElementById(`del-${item.codigo}`).onclick = () => {
+            carrito = carrito.filter(p => p.codigo !== item.codigo)
+            localStorage.setItem("carrito", JSON.stringify(carrito))
+            renderCarrito()
+        }
+    })
+
+    actualizarTotal()
+    actualizarContador()
 }
 
-function mostrarPrestamos(){
-    if(datos.prestamos.length === 0){
-        alert("Todavia no hay prestamos")
+// =============================
+// TOTAL + DESCUENTO
+// =============================
+const actualizarTotal = () => {
+
+    let subtotal = carrito.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
+
+    let descuento = 0
+    if (subtotal > 8000) {
+        descuento = subtotal * 0.10
+    }
+
+    let totalFinal = subtotal - descuento
+
+    document.getElementById("carritoTotal").innerHTML =
+        `Subtotal: $${subtotal} | Descuento: $${descuento} | Total: $${totalFinal}`
+}
+
+// =============================
+// CONTADOR DINÁMICO
+// =============================
+const actualizarContador = () => {
+
+    const totalItems = carrito.reduce((acc, item) => acc + item.cantidad, 0)
+
+    let contador = document.getElementById("contadorCarrito")
+
+    if (!contador) {
+        contador = document.createElement("p")
+        contador.id = "contadorCarrito"
+        document.getElementById("carritoTotal").before(contador)
+    }
+
+    contador.innerHTML = `Productos en carrito: ${totalItems}`
+}
+
+// =============================
+// VACIAR CARRITO
+// =============================
+const vaciarCarrito = () => {
+
+    carrito = []
+    localStorage.setItem("carrito", JSON.stringify(carrito))
+    renderCarrito()
+
+    Swal.fire("Carrito vacío", "Se eliminaron todos los productos", "info")
+}
+
+// =============================
+// FINALIZAR COMPRA
+// =============================
+const procesarCompra = (evento) => {
+
+    evento.preventDefault()
+
+    if (carrito.length === 0) {
+        Swal.fire("Error", "El carrito está vacío", "warning")
         return
     }
 
-    let texto = "Prestamos realizados:"
-    for(let i = 0; i < datos.prestamos.length; i++){
-        texto += "\n" + (i+1) + " - $" + datos.prestamos[i].monto + " en " + datos.prestamos[i].cuotas + " cuotas"
+    const datos = new FormData(evento.target)
+    const cliente = Object.fromEntries(datos)
+
+    const orden = {
+        id: ventas.length + 1,
+        fecha: new Date().toLocaleString(),
+        cliente,
+        productos: carrito,
+        total: carrito.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
     }
-    alert(texto)
+
+    ventas.push(orden)
+    localStorage.setItem("ventas", JSON.stringify(ventas))
+
+    mostrarTicket(orden)
+
+    carrito = []
+    localStorage.setItem("carrito", JSON.stringify(carrito))
+    renderCarrito()
 }
 
-function menu(){
-    let opcion = prompt(
-        "Que desea hacer:\n" +
-        "1 - Simular prestamo\n" +
-        "2 - Ver prestamos\n" +
-        "3 - Salir"
-    )
-    return Number(opcion)
+// =============================
+// TICKET VISUAL
+// =============================
+const mostrarTicket = (orden) => {
+
+    let detalleProductos = orden.productos.map(p =>
+        `${p.nombre} - ${p.cantidad} x $${p.precio}`
+    ).join("<br>")
+
+    Swal.fire({
+        title: "Compra realizada 🎉",
+        html: `
+            <strong>Cliente:</strong> ${orden.cliente.nombre || "No especificado"}<br>
+            <strong>Fecha:</strong> ${orden.fecha}<br><br>
+            ${detalleProductos}<br><br>
+            <strong>Total: $${orden.total}</strong>
+        `,
+        icon: "success"
+    })
 }
 
-function selector(opcion){
-    switch(opcion){
-        case 1:
-            simularPrestamo()
-            break
-        case 2:
-            mostrarPrestamos()
-            break
-        case 3:
-            alert("Fin del programa")
-            return false
-        default:
-            alert("Opcion invalida")
-    }
-    return true
-}
 
-function inicializar(){
-    let intentos = 0
-    const maxIntentos = 3
+document.getElementById("tipoProducto")
+    .addEventListener("change", (e) => {
 
-    do{
-        login(intentos, maxIntentos)
-        intentos++
-    } while(!datos.ingreso && intentos < maxIntentos)
+        const valor = e.target.value
 
-    if(datos.ingreso){
-        let continuar = true
-        while(continuar){
-            continuar = selector(menu())
+        if (valor === "0") {
+            mostrarProductos(inventario)
+        } else {
+            mostrarProductos(inventario.filter(p => p.categoria === valor))
         }
-    }
+    })
+
+
+const botonVaciar = document.createElement("button")
+botonVaciar.innerText = "Vaciar carrito"
+botonVaciar.className = "btn btn-secondary mt-2"
+botonVaciar.onclick = vaciarCarrito
+document.getElementById("listaCarrito").after(botonVaciar)
+
+
+const iniciarApp = () => {
+    inicializarInventario()
+    mostrarProductos(inventario)
+    renderCarrito()
 }
 
-inicializar()
+document.getElementById("formCompraFinal")
+    .addEventListener("submit", procesarCompra)
+
+iniciarApp()
