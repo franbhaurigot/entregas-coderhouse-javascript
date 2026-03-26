@@ -1,0 +1,34 @@
+[
+  {
+    "nombre": "PlayStation 5",
+    "codigo": "G01",
+    "categoria": "Consolas",
+    "precio": 850000,
+    "stock": 5,
+    "detalle": "Consola Sony de última generación"
+  },
+  {
+    "nombre": "Xbox Series X",
+    "codigo": "G02",
+    "categoria": "Consolas",
+    "precio": 820000,
+    "stock": 4,
+    "detalle": "Consola Microsoft potente"
+  },
+  {
+    "nombre": "Joystick PS5",
+    "codigo": "G03",
+    "categoria": "Accesorios",
+    "precio": 95000,
+    "stock": 10,
+    "detalle": "Control DualSense"
+  },
+  {
+    "nombre": "FIFA 24",
+    "codigo": "G04",
+    "categoria": "Juegos",
+    "precio": 70000,
+    "stock": 12,
+    "detalle": "Juego de fútbol"
+  }
+]

@@ -12,17 +12,7 @@ class Articulo {
     }
 }
 
-// =============================
-// PRODUCTOS BASE
-// =============================
-const catalogoInicial = [
-    { nombre:"PlayStation 5", codigo:"G01", categoria:"Consolas", precio:850000, stock:5, detalle:"Consola Sony de última generación 4K" },
-    { nombre:"Xbox Series X", codigo:"G02", categoria:"Consolas", precio:820000, stock:4, detalle:"Potencia y rendimiento next-gen" },
-    { nombre:"Joystick PS5", codigo:"G03", categoria:"Accesorios", precio:95000, stock:12, detalle:"Control inalámbrico DualSense" },
-    { nombre:"Teclado Mecánico RGB", codigo:"G04", categoria:"Accesorios", precio:60000, stock:8, detalle:"Teclado gamer retroiluminado" },
-    { nombre:"FIFA 24", codigo:"G05", categoria:"Juegos", precio:70000, stock:15, detalle:"Simulador de fútbol EA Sports" },
-    { nombre:"Call of Duty MW3", codigo:"G06", categoria:"Juegos", precio:75000, stock:10, detalle:"Shooter de última generación" }
-]
+
 
 // =============================
 // ESTADO GLOBAL
@@ -263,11 +253,43 @@ botonVaciar.onclick = vaciarCarrito
 document.getElementById("listaCarrito").after(botonVaciar)
 
 
+document.getElementById("contenedorProductos").innerHTML = "Cargando productos..."
+
+
+
+
+
+const cargarProductos = async () => {
+
+    try {
+        const response = await fetch("./javascript/productos.json")
+        const data = await response.json()
+
+        inventario = data.map(prod => new Articulo(
+            prod.nombre,
+            prod.codigo,
+            prod.categoria,
+            prod.precio,
+            prod.stock,
+            prod.detalle
+        ))
+
+        localStorage.setItem("inventario", JSON.stringify(inventario))
+
+        mostrarProductos(inventario)
+
+    } catch (error) {
+        console.warn("Error al cargar productos", error)
+    }
+}
+
+
+
 const iniciarApp = () => {
-    inicializarInventario()
-    mostrarProductos(inventario)
+    cargarProductos()
     renderCarrito()
 }
+
 
 document.getElementById("formCompraFinal")
     .addEventListener("submit", procesarCompra)
